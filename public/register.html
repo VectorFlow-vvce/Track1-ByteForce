@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CareBand – Create Account</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0e1a; --surface: #111827; --surface2: #1a2235;
+      --border: rgba(255,255,255,0.07); --accent: #00d4aa; --accent2: #3b82f6;
+      --danger: #ef4444; --safe: #10b981; --text: #f1f5f9; --muted: #64748b;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text);
+      min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      overflow-x: hidden; padding: 20px 0;
+    }
+    .bg-orbs { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+    .orb { position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.12; }
+    .orb-1 { width: 500px; height: 500px; background: var(--accent2); top: -150px; right: -100px; animation: float1 9s ease-in-out infinite; }
+    .orb-2 { width: 400px; height: 400px; background: var(--accent); bottom: -100px; left: -100px; animation: float2 11s ease-in-out infinite; }
+    @keyframes float1 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(-20px,30px)} }
+    @keyframes float2 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(30px,-20px)} }
+
+    .auth-container { position: relative; z-index: 1; width: 100%; max-width: 480px; padding: 20px; }
+    .auth-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 28px; padding: 40px;
+      box-shadow: 0 24px 80px rgba(0,0,0,0.5);
+    }
+    .auth-logo { text-align: center; margin-bottom: 28px; }
+    .logo-icon {
+      width: 60px; height: 60px;
+      background: linear-gradient(135deg, var(--accent2), #8b5cf6);
+      border-radius: 16px; display: inline-flex; align-items: center; justify-content: center;
+      font-size: 26px; margin-bottom: 12px; box-shadow: 0 8px 32px rgba(59,130,246,0.3);
+    }
+    .auth-logo h1 { font-family: 'Syne', sans-serif; font-size: 24px; font-weight: 800; color: var(--accent); }
+    .auth-logo p { font-size: 12px; color: var(--muted); margin-top: 3px; }
+    .auth-title { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800; margin-bottom: 4px; }
+    .auth-sub { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
+
+    .form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .form-group { margin-bottom: 16px; }
+    .form-label { display: block; font-size: 11px; font-weight: 600; color: var(--muted); margin-bottom: 7px; text-transform: uppercase; letter-spacing: 0.8px; }
+    .input-wrap { position: relative; }
+    .input-icon { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); font-size: 15px; color: var(--muted); pointer-events: none; }
+    .form-input {
+      width: 100%; padding: 12px 13px 12px 40px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 11px; color: var(--text);
+      font-family: 'DM Sans', sans-serif; font-size: 14px;
+      outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .form-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,212,170,0.1); }
+    .form-input::placeholder { color: var(--muted); }
+    .form-select {
+      width: 100%; padding: 12px 13px 12px 40px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 11px; color: var(--text);
+      font-family: 'DM Sans', sans-serif; font-size: 14px;
+      outline: none; cursor: pointer; appearance: none;
+      transition: border-color 0.2s;
+    }
+    .form-select:focus { border-color: var(--accent); }
+    .form-select option { background: var(--surface2); }
+    .toggle-pw {
+      position: absolute; right: 13px; top: 50%; transform: translateY(-50%);
+      cursor: pointer; font-size: 15px; color: var(--muted);
+      background: none; border: none; padding: 0;
+    }
+
+    .password-strength { margin-top: 8px; }
+    .strength-bar { height: 4px; border-radius: 4px; background: var(--surface2); overflow: hidden; margin-bottom: 4px; }
+    .strength-fill { height: 100%; border-radius: 4px; transition: width 0.3s, background 0.3s; width: 0%; }
+    .strength-text { font-size: 11px; color: var(--muted); }
+
+    .terms-wrap { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 20px; }
+    .terms-wrap input { accent-color: var(--accent); width: 15px; height: 15px; margin-top: 2px; cursor: pointer; flex-shrink: 0; }
+    .terms-wrap span { font-size: 13px; color: var(--muted); line-height: 1.5; }
+    .terms-wrap a { color: var(--accent); text-decoration: none; }
+
+    .btn-primary {
+      width: 100%; padding: 14px;
+      background: linear-gradient(135deg, var(--accent2), #8b5cf6);
+      color: #fff; border: none; border-radius: 12px;
+      font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 700;
+      cursor: pointer; transition: all 0.2s;
+      box-shadow: 0 4px 20px rgba(59,130,246,0.3);
+    }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 28px rgba(59,130,246,0.4); }
+    .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+    .error-msg {
+      background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.25);
+      color: var(--danger); border-radius: 10px; padding: 12px 14px;
+      font-size: 13px; margin-bottom: 16px; display: none;
+    }
+    .error-msg.show { display: block; }
+    .success-msg {
+      background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.25);
+      color: var(--safe); border-radius: 10px; padding: 12px 14px;
+      font-size: 13px; margin-bottom: 16px; display: none;
+    }
+    .success-msg.show { display: block; }
+
+    .loading-spinner {
+      display: inline-block; width: 15px; height: 15px;
+      border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff;
+      border-radius: 50%; animation: spin 0.7s linear infinite;
+      margin-right: 8px; vertical-align: middle;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .auth-footer { text-align: center; margin-top: 20px; font-size: 14px; color: var(--muted); }
+    .auth-footer a { color: var(--accent); text-decoration: none; font-weight: 600; }
+    .auth-footer a:hover { text-decoration: underline; }
+
+    .role-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px; }
+    .role-card {
+      padding: 12px 8px; border-radius: 10px; border: 1px solid var(--border);
+      background: var(--surface2); cursor: pointer; text-align: center;
+      transition: all 0.2s; font-size: 12px; font-weight: 600; color: var(--muted);
+    }
+    .role-card:hover { border-color: rgba(0,212,170,0.3); color: var(--text); }
+    .role-card.selected { border-color: var(--accent); background: rgba(0,212,170,0.08); color: var(--accent); }
+    .role-card .role-icon { font-size: 20px; display: block; margin-bottom: 4px; }
+  </style>
+</head>
+<body>
+  <div class="bg-orbs">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+  </div>
+
+  <div class="auth-container">
+    <div class="auth-card">
+      <div class="auth-logo">
+        <div class="logo-icon">🩺</div>
+        <h1>CareBand</h1>
+        <p>Dementia Care & Emergency System</p>
+      </div>
+
+      <h2 class="auth-title">Create your account</h2>
+      <p class="auth-sub">Join the CareBand caregiver network</p>
+
+      <div class="error-msg" id="errorMsg"></div>
+      <div class="success-msg" id="successMsg"></div>
+
+      <form id="registerForm">
+        <div class="form-row-2">
+          <div class="form-group">
+            <label class="form-label">First Name</label>
+            <div class="input-wrap">
+              <span class="input-icon">👤</span>
+              <input type="text" class="form-input" id="firstName" placeholder="Sarah" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Last Name</label>
+            <div class="input-wrap">
+              <span class="input-icon">👤</span>
+              <input type="text" class="form-input" id="lastName" placeholder="Johnson" required>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Email Address</label>
+          <div class="input-wrap">
+            <span class="input-icon">✉️</span>
+            <input type="email" class="form-input" id="email" placeholder="sarah@hospital.com" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Your Role</label>
+          <div class="role-cards">
+            <div class="role-card selected" data-role="caregiver" onclick="selectRole(this)">
+              <span class="role-icon">👨‍⚕️</span>Caregiver
+            </div>
+            <div class="role-card" data-role="nurse" onclick="selectRole(this)">
+              <span class="role-icon">👩‍⚕️</span>Nurse
+            </div>
+            <div class="role-card" data-role="admin" onclick="selectRole(this)">
+              <span class="role-icon">🏥</span>Admin
+            </div>
+          </div>
+          <input type="hidden" id="role" value="caregiver">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <div class="input-wrap">
+            <span class="input-icon">🔒</span>
+            <input type="password" class="form-input" id="password" placeholder="Create a strong password" required oninput="checkStrength(this.value)">
+            <button type="button" class="toggle-pw" onclick="togglePassword('password', this)">👁️</button>
+          </div>
+          <div class="password-strength">
+            <div class="strength-bar"><div class="strength-fill" id="strengthFill"></div></div>
+            <span class="strength-text" id="strengthText">Enter a password</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Confirm Password</label>
+          <div class="input-wrap">
+            <span class="input-icon">🔒</span>
+            <input type="password" class="form-input" id="confirmPassword" placeholder="Repeat your password" required>
+            <button type="button" class="toggle-pw" onclick="togglePassword('confirmPassword', this)">👁️</button>
+          </div>
+        </div>
+
+        <div class="terms-wrap">
+          <input type="checkbox" id="terms" required>
+          <span>I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>. Patient data is handled with full HIPAA compliance.</span>
+        </div>
+
+        <button type="submit" class="btn-primary" id="registerBtn">Create Account</button>
+      </form>
+
+      <div class="auth-footer">
+        Already have an account? <a href="index.html">Sign in</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let selectedRole = 'caregiver';
+
+    function selectRole(el) {
+      document.querySelectorAll('.role-card').forEach(c => c.classList.remove('selected'));
+      el.classList.add('selected');
+      selectedRole = el.dataset.role;
+      document.getElementById('role').value = selectedRole;
+    }
+
+    function togglePassword(id, btn) {
+      const input = document.getElementById(id);
+      if (input.type === 'password') { input.type = 'text'; btn.textContent = '🙈'; }
+      else { input.type = 'password'; btn.textContent = '👁️'; }
+    }
+
+    function checkStrength(pw) {
+      const fill = document.getElementById('strengthFill');
+      const text = document.getElementById('strengthText');
+      let score = 0;
+      if (pw.length >= 8) score++;
+      if (/[A-Z]/.test(pw)) score++;
+      if (/[0-9]/.test(pw)) score++;
+      if (/[^A-Za-z0-9]/.test(pw)) score++;
+      const levels = [
+        { w: '0%', c: 'transparent', t: 'Enter a password' },
+        { w: '25%', c: '#ef4444', t: 'Weak' },
+        { w: '50%', c: '#f59e0b', t: 'Fair' },
+        { w: '75%', c: '#3b82f6', t: 'Good' },
+        { w: '100%', c: '#10b981', t: 'Strong ✓' }
+      ];
+      fill.style.width = levels[score].w;
+      fill.style.background = levels[score].c;
+      text.textContent = levels[score].t;
+      text.style.color = levels[score].c;
+    }
+
+    document.getElementById('registerForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('registerBtn');
+      const errorMsg = document.getElementById('errorMsg');
+      const successMsg = document.getElementById('successMsg');
+      errorMsg.classList.remove('show');
+      successMsg.classList.remove('show');
+
+      const firstName = document.getElementById('firstName').value.trim();
+      const lastName = document.getElementById('lastName').value.trim();
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const confirmPassword = document.getElementById('confirmPassword').value;
+      const role = document.getElementById('role').value;
+
+      if (password !== confirmPassword) {
+        errorMsg.textContent = 'Passwords do not match';
+        errorMsg.classList.add('show');
+        return;
+      }
+      if (password.length < 6) {
+        errorMsg.textContent = 'Password must be at least 6 characters';
+        errorMsg.classList.add('show');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '<span class="loading-spinner"></span>Creating account...';
+
+      try {
+        const res = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: `${firstName} ${lastName}`, email, password, role })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Registration failed');
+
+        localStorage.setItem('cb_token', data.token);
+        localStorage.setItem('cb_user', JSON.stringify(data.user));
+
+        successMsg.textContent = 'Account created! Redirecting to dashboard...';
+        successMsg.classList.add('show');
+        setTimeout(() => window.location.href = '/dashboard', 1000);
+      } catch (err) {
+        errorMsg.textContent = err.message;
+        errorMsg.classList.add('show');
+        btn.disabled = false;
+        btn.innerHTML = 'Create Account';
+      }
+    });
+  </script>
+</body>
+</html>
