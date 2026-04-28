@@ -11,6 +11,7 @@ const patientSchema = new mongoose.Schema({
     lng: { type: Number, default: 77.5946 }
   },
   deviceId: { type: String },
+  phone: { type: String, default: '' },
   status: { type: String, enum: ['safe', 'warning', 'danger'], default: 'safe' },
   lastSeen: { type: Date, default: Date.now },
   photo: { type: String, default: '' },

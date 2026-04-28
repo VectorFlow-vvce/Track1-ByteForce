@@ -17,25 +17,28 @@ router.post('/', async (req, res) => {
 
     if (Location) {
       const loc = await Location.create(locationData);
-      // Update patient lastSeen
-      if (Patient) await Patient.findByIdAndUpdate(patientId, { lastSeen: new Date() });
-
-      // Check geofence (simplified)
-      if (Patient) {
-        const patient = await Patient.findById(patientId);
-        if (patient) {
-          const dist = getDistance(lat, lng, patient.safeZoneCenter.lat, patient.safeZoneCenter.lng);
-          if (dist > patient.safeZoneRadius) {
-            req.io.emit('geofence-exit', { patientId, patientName: patient.name, lat, lng, distance: Math.round(dist) });
-          }
-        }
-      }
-
-      req.io.emit('location-updated', locationData);
-      return res.status(201).json(loc);
     }
 
-    // Demo mode
+    // Update patient's stored position and lastSeen in DB
+    if (Patient) {
+      const patient = await Patient.findById(patientId);
+      if (patient) {
+        // If this is the first GPS from patient's phone, set it as safe zone center
+        if (patient.safeZoneCenter.lat === 0 && patient.safeZoneCenter.lng === 0) {
+          patient.safeZoneCenter = { lat, lng };
+        }
+        patient.lastSeen = new Date();
+        await patient.save();
+
+        // Check geofence
+        const dist = getDistance(lat, lng, patient.safeZoneCenter.lat, patient.safeZoneCenter.lng);
+        if (dist > patient.safeZoneRadius) {
+          req.io.emit('geofence-exit', { patientId, patientName: patient.name, lat, lng, distance: Math.round(dist) });
+        }
+      }
+    }
+
+    // Broadcast to all connected dashboards
     req.io.emit('location-updated', locationData);
     res.status(201).json(locationData);
   } catch (err) {

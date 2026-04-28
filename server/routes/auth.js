@@ -105,4 +105,54 @@ router.post('/reset-password', async (req, res) => {
   }
 });
 
+// POST /api/auth/change-password (requires auth)
+const authMiddleware = require('../middleware/auth');
+
+router.post('/change-password', authMiddleware, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) return res.status(400).json({ error: 'Current and new password required' });
+    if (newPassword.length < 6) return res.status(400).json({ error: 'New password must be at least 6 characters' });
+
+    if (User) {
+      const user = await User.findById(req.user.id);
+      if (!user) return res.status(404).json({ error: 'User not found' });
+
+      const valid = await user.comparePassword(currentPassword);
+      if (!valid) return res.status(401).json({ error: 'Current password is incorrect' });
+
+      user.passwordHash = await bcrypt.hash(newPassword, 12);
+      await user.save();
+      return res.json({ message: 'Password changed successfully' });
+    }
+
+    res.json({ message: 'Password changed (demo)' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// DELETE /api/auth/delete-account (requires auth)
+router.delete('/delete-account', authMiddleware, async (req, res) => {
+  try {
+    if (User) {
+      // Delete user's patients first
+      const Patient = require('../models/Patient');
+      await Patient.deleteMany({ caregiverId: req.user.id });
+
+      // Delete user's alerts
+      const Alert = require('../models/Alert');
+      await Alert.deleteMany({ caregiverId: req.user.id });
+
+      // Delete the user
+      await User.findByIdAndDelete(req.user.id);
+      return res.json({ message: 'Account and all data deleted' });
+    }
+
+    res.json({ message: 'Account deleted (demo)' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;

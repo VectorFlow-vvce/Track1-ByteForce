@@ -52,7 +52,7 @@
       border-radius: 18px;
       display: inline-flex; align-items: center; justify-content: center;
       font-size: 28px; margin-bottom: 14px;
-      box-shadow: 0 8px 32px rgba(0,212,170,0.3);
+      box-shadow: 0 8px 32px rgba(43, 129, 112, 0.3);
     }
     .auth-logo h1 {
       font-family: 'Syne', sans-serif; font-size: 26px; font-weight: 800;
@@ -178,10 +178,6 @@
       <h2 class="auth-title">Welcome back</h2>
       <p class="auth-sub">Sign in to your caregiver dashboard</p>
 
-      <div class="demo-hint">
-        <strong>Demo Mode:</strong> Enter any email & password to access the dashboard
-      </div>
-
       <div class="error-msg" id="errorMsg"></div>
       <div class="success-msg" id="successMsg"></div>
 
@@ -227,35 +223,36 @@
       else { input.type = 'password'; btn.textContent = '👁️'; }
     }
 
-    document.getElementById('loginForm').addEventListener('submit', (e) => {
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const btn = document.getElementById('loginBtn');
+      const errorMsg = document.getElementById('errorMsg');
       const successMsg = document.getElementById('successMsg');
-
+      errorMsg.classList.remove('show'); successMsg.classList.remove('show');
       const email = document.getElementById('email').value;
-      const name = email.split('@')[0] || 'Caregiver';
-
+      const password = document.getElementById('password').value;
       btn.disabled = true;
       btn.innerHTML = '<span class="loading-spinner"></span>Signing in...';
-
-      // Direct login — no server needed
-      localStorage.setItem('cb_token', 'demo-token-' + Date.now());
-      localStorage.setItem('cb_user', JSON.stringify({
-        id: 'demo',
-        name: name.charAt(0).toUpperCase() + name.slice(1),
-        email: email,
-        role: 'caregiver'
-      }));
-
-      successMsg.textContent = 'Login successful! Redirecting...';
-      successMsg.classList.add('show');
-      setTimeout(() => window.location.href = 'dashboard.html', 800);
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST', headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Invalid email or password');
+        localStorage.setItem('cb_token', data.token);
+        localStorage.setItem('cb_user', JSON.stringify(data.user));
+        successMsg.textContent = 'Login successful! Redirecting...';
+        successMsg.classList.add('show');
+        setTimeout(() => window.location.href = 'dashboard.html', 800);
+      } catch (err) {
+        errorMsg.textContent = err.message;
+        errorMsg.classList.add('show');
+        btn.disabled = false;
+        btn.innerHTML = 'Sign In';
+      }
     });
-
-    // Auto-redirect if already logged in
-    if (localStorage.getItem('cb_token')) {
-      window.location.href = 'dashboard.html';
-    }
+    if (localStorage.getItem('cb_token')) { window.location.href = 'dashboard.html'; }
   </script>
 </body>
 </html>

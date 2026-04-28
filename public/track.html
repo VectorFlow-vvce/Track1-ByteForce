@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CareBand - Share My Location</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+  <style>
+    :root{--bg:#0a0e1a;--surface:#111827;--surface2:#1a2235;--border:rgba(255,255,255,0.07);--accent:#00d4aa;--danger:#ef4444;--safe:#10b981;--text:#f1f5f9;--muted:#64748b;}
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:20px;}
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:28px;width:100%;max-width:400px;margin-bottom:16px;}
+    .logo{text-align:center;margin-bottom:24px;}
+    .logo h1{font-family:'Syne',sans-serif;font-size:24px;color:var(--accent);}
+    .logo p{font-size:12px;color:var(--muted);margin-top:4px;}
+    .status-box{text-align:center;padding:20px;border-radius:14px;margin-bottom:16px;}
+    .status-box.active{background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.25);}
+    .status-box.inactive{background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.25);}
+    .status-box.error{background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.25);}
+    .status-icon{font-size:48px;margin-bottom:10px;}
+    .status-text{font-size:16px;font-weight:600;}
+    .status-sub{font-size:12px;color:var(--muted);margin-top:6px;}
+    .coords{font-family:monospace;font-size:14px;color:var(--accent);margin-top:8px;}
+    .btn{width:100%;padding:16px;border-radius:14px;border:none;font-family:'DM Sans',sans-serif;font-size:16px;font-weight:700;cursor:pointer;transition:all 0.2s;margin-bottom:10px;}
+    .btn-start{background:var(--accent);color:#000;}
+    .btn-start:hover{background:#00bfa0;}
+    .btn-stop{background:rgba(239,68,68,0.15);color:var(--danger);}
+    .btn-sos{background:var(--danger);color:white;font-size:18px;}
+    .btn-sos:hover{background:#dc2626;}
+    .info{font-size:12px;color:var(--muted);text-align:center;line-height:1.6;margin-top:12px;}
+    .update-log{max-height:150px;overflow-y:auto;font-size:11px;color:var(--muted);margin-top:12px;}
+    .update-log div{padding:4px 0;border-bottom:1px solid var(--border);}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">
+      <h1>🩺 CareBand</h1>
+      <p>Patient Location Sharing</p>
+    </div>
+
+    <div class="status-box inactive" id="statusBox">
+      <div class="status-icon" id="statusIcon">📍</div>
+      <div class="status-text" id="statusText">Location sharing is off</div>
+      <div class="status-sub" id="statusSub">Tap "Start Sharing" to begin</div>
+      <div class="coords" id="coordsDisplay"></div>
+    </div>
+
+    <button class="btn btn-start" id="startBtn" onclick="startSharing()">📡 Start Sharing My Location</button>
+    <button class="btn btn-stop" id="stopBtn" onclick="stopSharing()" style="display:none">⏹️ Stop Sharing</button>
+    <button class="btn btn-sos" onclick="sendSOS()">🆘 EMERGENCY SOS</button>
+
+    <div class="update-log" id="log"></div>
+    <div class="info">
+      Your location is sent to your caregiver's dashboard every 5 seconds.<br>
+      Keep this page open for continuous tracking.
+    </div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const patientId = params.get('id') || 'unknown';
+    const serverUrl = window.location.origin;
+    let watchId = null;
+    let sendInterval = null;
+    let lastLat = 0, lastLng = 0;
+
+    function log(msg) {
+      const el = document.getElementById('log');
+      const d = document.createElement('div');
+      d.textContent = new Date().toLocaleTimeString() + ' — ' + msg;
+      el.prepend(d);
+      if (el.children.length > 20) el.lastChild.remove();
+    }
+
+    function startSharing() {
+      if (!navigator.geolocation) {
+        setStatus('error', '❌', 'GPS not available', 'This device does not support location');
+        return;
+      }
+
+      setStatus('active', '📡', 'Acquiring GPS...', 'Please wait');
+
+      watchId = navigator.geolocation.watchPosition(
+        (pos) => {
+          lastLat = pos.coords.latitude;
+          lastLng = pos.coords.longitude;
+          const acc = pos.coords.accuracy.toFixed(0);
+          setStatus('active', '✅', 'Location sharing active', 'Accuracy: ' + acc + 'm');
+          document.getElementById('coordsDisplay').textContent = lastLat.toFixed(6) + ', ' + lastLng.toFixed(6);
+          log('GPS: ' + lastLat.toFixed(6) + ', ' + lastLng.toFixed(6) + ' (±' + acc + 'm)');
+          sendLocation(lastLat, lastLng, pos.coords.accuracy);
+        },
+        (err) => {
+          setStatus('error', '❌', 'GPS Error', err.message);
+          log('Error: ' + err.message);
+        },
+        { enableHighAccuracy: true, maximumAge: 3000, timeout: 10000 }
+      );
+
+      document.getElementById('startBtn').style.display = 'none';
+      document.getElementById('stopBtn').style.display = 'block';
+    }
+
+    function stopSharing() {
+      if (watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
+      setStatus('inactive', '📍', 'Location sharing stopped', 'Tap to resume');
+      document.getElementById('startBtn').style.display = 'block';
+      document.getElementById('stopBtn').style.display = 'none';
+      log('Sharing stopped');
+    }
+
+    async function sendLocation(lat, lng, accuracy) {
+      try {
+        await fetch(serverUrl + '/api/locations', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ patientId, lat, lng, accuracy })
+        });
+      } catch (e) {
+        log('Send failed (offline): ' + e.message);
+      }
+    }
+
+    async function sendSOS() {
+      setStatus('error', '🆘', 'SOS SENT!', 'Emergency alert sent to caregivers');
+      log('SOS triggered!');
+
+      try {
+        // Send SOS alert
+        await fetch(serverUrl + '/api/sos/alert-all', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            subject: 'PATIENT SOS - Immediate Help Needed!',
+            message: 'Patient (ID: ' + patientId + ') triggered an SOS alert!<br><br>' +
+              '<strong>Location:</strong> ' + lastLat.toFixed(6) + ', ' + lastLng.toFixed(6) + '<br>' +
+              '<a href="https://www.google.com/maps?q=' + lastLat + ',' + lastLng + '">Open in Google Maps</a><br><br>' +
+              'Please respond immediately!',
+            patientId: patientId
+          })
+        });
+        log('SOS email sent to all caregivers');
+      } catch (e) {
+        log('SOS send failed: ' + e.message);
+      }
+
+      // Also create alert
+      try {
+        await fetch(serverUrl + '/api/alerts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'SOS', message: 'Patient SOS from device! Location: ' + lastLat.toFixed(4) + ', ' + lastLng.toFixed(4), patientId, severity: 'CRITICAL' })
+        });
+      } catch (e) {}
+    }
+
+    function setStatus(type, icon, text, sub) {
+      const box = document.getElementById('statusBox');
+      box.className = 'status-box ' + type;
+      document.getElementById('statusIcon').textContent = icon;
+      document.getElementById('statusText').textContent = text;
+      document.getElementById('statusSub').textContent = sub;
+    }
+  </script>
+</body>
+</html>

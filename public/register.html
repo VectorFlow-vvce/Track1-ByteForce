@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CareBand – Create Account</title>
+  <title>CareBand â€“ Create Account</title>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Syne:wght@700;800&display=swap" rel="stylesheet">
   <style>
     :root {
@@ -138,7 +138,7 @@
   <div class="auth-container">
     <div class="auth-card">
       <div class="auth-logo">
-        <div class="logo-icon">🩺</div>
+        <div class="logo-icon">ðŸ©º</div>
         <h1>CareBand</h1>
         <p>Dementia Care & Emergency System</p>
       </div>
@@ -154,14 +154,14 @@
           <div class="form-group">
             <label class="form-label">First Name</label>
             <div class="input-wrap">
-              <span class="input-icon">👤</span>
+              <span class="input-icon">ðŸ‘¤</span>
               <input type="text" class="form-input" id="firstName" placeholder="Sarah" required>
             </div>
           </div>
           <div class="form-group">
             <label class="form-label">Last Name</label>
             <div class="input-wrap">
-              <span class="input-icon">👤</span>
+              <span class="input-icon">ðŸ‘¤</span>
               <input type="text" class="form-input" id="lastName" placeholder="Johnson" required>
             </div>
           </div>
@@ -170,7 +170,7 @@
         <div class="form-group">
           <label class="form-label">Email Address</label>
           <div class="input-wrap">
-            <span class="input-icon">✉️</span>
+            <span class="input-icon">âœ‰ï¸</span>
             <input type="email" class="form-input" id="email" placeholder="sarah@hospital.com" required>
           </div>
         </div>
@@ -179,13 +179,13 @@
           <label class="form-label">Your Role</label>
           <div class="role-cards">
             <div class="role-card selected" data-role="caregiver" onclick="selectRole(this)">
-              <span class="role-icon">👨‍⚕️</span>Caregiver
+              <span class="role-icon">ðŸ‘¨â€âš•ï¸</span>Caregiver
             </div>
             <div class="role-card" data-role="nurse" onclick="selectRole(this)">
-              <span class="role-icon">👩‍⚕️</span>Nurse
+              <span class="role-icon">ðŸ‘©â€âš•ï¸</span>Nurse
             </div>
             <div class="role-card" data-role="admin" onclick="selectRole(this)">
-              <span class="role-icon">🏥</span>Admin
+              <span class="role-icon">ðŸ¥</span>Admin
             </div>
           </div>
           <input type="hidden" id="role" value="caregiver">
@@ -194,9 +194,9 @@
         <div class="form-group">
           <label class="form-label">Password</label>
           <div class="input-wrap">
-            <span class="input-icon">🔒</span>
+            <span class="input-icon">ðŸ”’</span>
             <input type="password" class="form-input" id="password" placeholder="Create a strong password" required oninput="checkStrength(this.value)">
-            <button type="button" class="toggle-pw" onclick="togglePassword('password', this)">👁️</button>
+            <button type="button" class="toggle-pw" onclick="togglePassword('password', this)">ðŸ‘ï¸</button>
           </div>
           <div class="password-strength">
             <div class="strength-bar"><div class="strength-fill" id="strengthFill"></div></div>
@@ -207,9 +207,9 @@
         <div class="form-group">
           <label class="form-label">Confirm Password</label>
           <div class="input-wrap">
-            <span class="input-icon">🔒</span>
+            <span class="input-icon">ðŸ”’</span>
             <input type="password" class="form-input" id="confirmPassword" placeholder="Repeat your password" required>
-            <button type="button" class="toggle-pw" onclick="togglePassword('confirmPassword', this)">👁️</button>
+            <button type="button" class="toggle-pw" onclick="togglePassword('confirmPassword', this)">ðŸ‘ï¸</button>
           </div>
         </div>
 
@@ -239,8 +239,8 @@
 
     function togglePassword(id, btn) {
       const input = document.getElementById(id);
-      if (input.type === 'password') { input.type = 'text'; btn.textContent = '🙈'; }
-      else { input.type = 'password'; btn.textContent = '👁️'; }
+      if (input.type === 'password') { input.type = 'text'; btn.textContent = 'ðŸ™ˆ'; }
+      else { input.type = 'password'; btn.textContent = 'ðŸ‘ï¸'; }
     }
 
     function checkStrength(pw) {
@@ -256,7 +256,7 @@
         { w: '25%', c: '#ef4444', t: 'Weak' },
         { w: '50%', c: '#f59e0b', t: 'Fair' },
         { w: '75%', c: '#3b82f6', t: 'Good' },
-        { w: '100%', c: '#10b981', t: 'Strong ✓' }
+        { w: '100%', c: '#10b981', t: 'Strong âœ“' }
       ];
       fill.style.width = levels[score].w;
       fill.style.background = levels[score].c;
@@ -307,7 +307,7 @@
 
         successMsg.textContent = 'Account created! Redirecting to dashboard...';
         successMsg.classList.add('show');
-        setTimeout(() => window.location.href = '/dashboard', 1000);
+        setTimeout(() => window.location.href = 'dashboard.html', 1000);
       } catch (err) {
         errorMsg.textContent = err.message;
         errorMsg.classList.add('show');
@@ -318,3 +318,4 @@
   </script>
 </body>
 </html>
+

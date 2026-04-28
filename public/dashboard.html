@@ -5,7 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CareBand - Caregiver Dashboard</title>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Syne:wght@700;800&display=swap" rel="stylesheet">
-  <!-- socket.io loaded dynamically below -->
+  <link rel="stylesheet" href="lib/leaflet/leaflet.css" />
+  <script src="lib/leaflet/leaflet.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
   <style>
     :root {
       --bg:#0a0e1a;--surface:#111827;--surface2:#1a2235;
@@ -215,31 +217,37 @@
     </div>
 
     <div class="stats-row">
-      <div class="stat-card"><div class="stat-label">Active Patients</div><div class="stat-value accent">3</div><div class="stat-sub">All monitored</div></div>
-      <div class="stat-card"><div class="stat-label">Active Alerts</div><div class="stat-value danger" id="alertCount">2</div><div class="stat-sub">Requires attention</div></div>
-      <div class="stat-card"><div class="stat-label">Safe Zone</div><div class="stat-value safe">2/3</div><div class="stat-sub">Patients in zone</div></div>
-      <div class="stat-card"><div class="stat-label">Voice Monitor</div><div class="stat-value warn">ON</div><div class="stat-sub">Listening active</div></div>
+      <div class="stat-card"><div class="stat-label">Active Patients</div><div class="stat-value accent" id="statPatients">0</div><div class="stat-sub">Monitored</div></div>
+      <div class="stat-card"><div class="stat-label">Active Alerts</div><div class="stat-value danger" id="alertCount">0</div><div class="stat-sub">Requires attention</div></div>
+      <div class="stat-card"><div class="stat-label">Safe Zone</div><div class="stat-value safe" id="statSafe">0</div><div class="stat-sub">Patients in zone</div></div>
+      <div class="stat-card"><div class="stat-label">Voice Monitor</div><div class="stat-value warn">OFF</div><div class="stat-sub">Click to enable</div></div>
     </div>
 
     <div class="grid-3">
       <div class="card">
-        <div class="card-title">Live Location Map <span class="badge">Real-time</span></div>
-        <div class="map-area">
+        <div class="card-title">Live Location Map <span class="badge">GPS Active</span></div>
+        <!-- Real Leaflet Map -->
+        <div id="leafletMap" style="height:280px;border-radius:14px;z-index:1;"></div>
+        <!-- GPS Info Bar -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;padding:8px 12px;background:var(--surface2);border-radius:10px;border:1px solid var(--border);font-size:12px;">
+          <div>
+            <span id="mapStatus" style="color:var(--safe)">✅ Acquiring GPS...</span>
+            <span class="coords" id="coordsDisplay" style="color:var(--muted);margin-left:10px">---, ---</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span id="gpsAccuracy" style="color:var(--muted)">Accuracy: --</span>
+            <span id="distanceDisplay" style="color:var(--accent);font-weight:600">--</span>
+            <button onclick="centerMap()" style="padding:4px 10px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--accent);font-size:11px;cursor:pointer;">⊙ Center</button>
+          </div>
+        </div>
+        <!-- Fallback CSS Map (hidden when Leaflet loads) -->
+        <div class="map-area" id="cssMapFallback" style="display:none;margin-top:10px;">
           <div class="map-placeholder">
             <div class="safe-zone-ring"></div>
             <div class="home-marker">🏠</div>
             <div class="patient-marker" id="patientMarker">
               <div class="dot-outer"><div class="dot-inner"></div></div>
               <div class="patient-label">Margaret W.</div>
-            </div>
-            <div class="map-controls">
-              <button class="map-btn" title="Zoom In">+</button>
-              <button class="map-btn" title="Zoom Out">−</button>
-              <button class="map-btn" title="Center">⊙</button>
-            </div>
-            <div class="map-info">
-              <div id="mapStatus" style="color:var(--safe)">✅ Inside safe zone</div>
-              <div class="coords" id="coordsDisplay">12.9716, 77.5946</div>
             </div>
           </div>
         </div>
@@ -252,37 +260,14 @@
     </div>
 
     <div class="grid-2">
-      <div class="card">
-        <div class="card-title">Patients <span class="badge">3 Active</span></div>
-        <div class="patient-card">
-          <div class="patient-avatar" style="background:linear-gradient(135deg,#667eea,#764ba2)">👵</div>
-          <div><div class="patient-name">Margaret Wilson</div><div class="patient-detail">78 yrs — Alzheimer's Stage 2</div></div>
-          <div class="patient-status"><span class="status-tag safe">Safe</span><span style="font-size:11px;color:var(--muted)">2m ago</span></div>
-        </div>
-        <div class="patient-card">
-          <div class="patient-avatar" style="background:linear-gradient(135deg,#f093fb,#f5576c)">👴</div>
-          <div><div class="patient-name">Robert Chen</div><div class="patient-detail">82 yrs — Vascular Dementia</div></div>
-          <div class="patient-status"><span class="status-tag warning">Warning</span><span style="font-size:11px;color:var(--muted)">5m ago</span></div>
-        </div>
-        <div class="patient-card">
-          <div class="patient-avatar" style="background:linear-gradient(135deg,#4facfe,#00f2fe)">👵</div>
-          <div><div class="patient-name">Dorothy Hayes</div><div class="patient-detail">75 yrs — Lewy Body Dementia</div></div>
-          <div class="patient-status"><span class="status-tag safe">Safe</span><span style="font-size:11px;color:var(--muted)">1m ago</span></div>
-        </div>
+      <div class="card" id="dashboardPatientsList">
+        <div class="card-title">Patients <span class="badge" id="patientCountBadge">0 Active</span></div>
+        <div id="noPatientsMsg" style="text-align:center;padding:20px;color:var(--muted);font-size:13px;">No patients yet. Click <strong style="color:var(--accent)">+ Add Patient</strong> on the Patients page to get started.</div>
       </div>
 
       <div class="card">
-        <div class="card-title">Daily Routine <span class="badge">Today</span></div>
-        <div class="routine-list">
-          <div class="routine-item"><span class="routine-time">07:00</span><span class="routine-dot done"></span> Morning medication</div>
-          <div class="routine-item"><span class="routine-time">08:30</span><span class="routine-dot done"></span> Breakfast</div>
-          <div class="routine-item"><span class="routine-time">10:00</span><span class="routine-dot done"></span> Morning walk</div>
-          <div class="routine-item"><span class="routine-time">12:00</span><span class="routine-dot current"></span> Lunch</div>
-          <div class="routine-item"><span class="routine-time">14:00</span><span class="routine-dot"></span> Afternoon medication</div>
-          <div class="routine-item"><span class="routine-time">16:00</span><span class="routine-dot"></span> Physical therapy</div>
-          <div class="routine-item"><span class="routine-time">18:00</span><span class="routine-dot"></span> Dinner</div>
-          <div class="routine-item"><span class="routine-time">21:00</span><span class="routine-dot"></span> Night medication</div>
-        </div>
+        <div class="card-title">Daily Routine <span class="badge">Today</span> <button class="resolve-btn" onclick="openModal('addRoutineModal')" style="font-size:12px;padding:5px 12px;">+ Add</button></div>
+        <div class="routine-list" id="routineList"></div>
         <div class="stress-card">
           <div class="stress-title">💙 Caregiver Wellness</div>
           <div class="stress-msg">You've been active for 6 hours. Remember to take breaks. Your wellbeing matters too.</div>
@@ -300,27 +285,12 @@
       </div>
     </div>
     <div class="info-grid" style="margin-bottom:24px">
-      <div class="info-item"><div class="info-item-label">Total Patients</div><div class="info-item-value" style="color:var(--accent)">3</div></div>
-      <div class="info-item"><div class="info-item-label">In Safe Zone</div><div class="info-item-value" style="color:var(--safe)">2</div></div>
-      <div class="info-item"><div class="info-item-label">Needs Attention</div><div class="info-item-value" style="color:var(--warn)">1</div></div>
+      <div class="info-item"><div class="info-item-label">Total Patients</div><div class="info-item-value" style="color:var(--accent)" id="totalPatientsCount">3</div></div>
+      <div class="info-item"><div class="info-item-label">In Safe Zone</div><div class="info-item-value" style="color:var(--safe)" id="safeZoneCount">2</div></div>
+      <div class="info-item"><div class="info-item-label">Needs Attention</div><div class="info-item-value" style="color:var(--warn)" id="attentionCount">1</div></div>
     </div>
-    <div class="card">
+    <div class="card" id="patientsPageList">
       <div class="card-title">All Patients</div>
-      <div class="patient-card">
-        <div class="patient-avatar" style="background:linear-gradient(135deg,#667eea,#764ba2)">👵</div>
-        <div><div class="patient-name">Margaret Wilson</div><div class="patient-detail">78 yrs — Alzheimer's Stage 2 — Device: CB-001</div></div>
-        <div class="patient-status"><span class="status-tag safe">Safe</span></div>
-      </div>
-      <div class="patient-card">
-        <div class="patient-avatar" style="background:linear-gradient(135deg,#f093fb,#f5576c)">👴</div>
-        <div><div class="patient-name">Robert Chen</div><div class="patient-detail">82 yrs — Vascular Dementia — Device: CB-002</div></div>
-        <div class="patient-status"><span class="status-tag warning">Warning</span></div>
-      </div>
-      <div class="patient-card">
-        <div class="patient-avatar" style="background:linear-gradient(135deg,#4facfe,#00f2fe)">👵</div>
-        <div><div class="patient-name">Dorothy Hayes</div><div class="patient-detail">75 yrs — Lewy Body Dementia — Device: CB-003</div></div>
-        <div class="patient-status"><span class="status-tag safe">Safe</span></div>
-      </div>
     </div>
   </div>
 
@@ -330,12 +300,7 @@
     <div class="card">
       <div class="card-title">All Alerts <span class="badge danger">Live</span></div>
       <div class="alert-feed" id="alertFeedFull" style="max-height:600px">
-        <div class="alert-item danger"><span class="alert-icon">🚨</span><div class="alert-body"><div class="alert-text">Margaret left safe zone — 120m from home</div><div class="alert-time">5 min ago</div></div><button class="resolve-btn">Resolve</button></div>
-        <div class="alert-item danger"><span class="alert-icon">🗣️</span><div class="alert-body"><div class="alert-text">"Help" keyword detected from Robert</div><div class="alert-time">10 min ago</div></div><button class="resolve-btn">Resolve</button></div>
-        <div class="alert-item warn"><span class="alert-icon">⏰</span><div class="alert-body"><div class="alert-text">Dorothy missed medication at 2:00 PM</div><div class="alert-time">1 hour ago</div></div><button class="resolve-btn">Resolve</button></div>
-        <div class="alert-item danger"><span class="alert-icon">⚠️</span><div class="alert-body"><div class="alert-text">Possible fall detected — Margaret</div><div class="alert-time">2 hours ago</div></div><button class="resolve-btn">Resolve</button></div>
-        <div class="alert-item safe"><span class="alert-icon">✅</span><div class="alert-body"><div class="alert-text">Margaret returned to safe zone</div><div class="alert-time">3 hours ago</div></div></div>
-        <div class="alert-item info"><span class="alert-icon">📍</span><div class="alert-body"><div class="alert-text">Robert's device reconnected</div><div class="alert-time">4 hours ago</div></div></div>
+        <div id="noAlertsMsg" style="text-align:center;padding:20px;color:var(--muted);font-size:13px;">No alerts yet. Alerts will appear here when triggered.</div>
       </div>
     </div>
   </div>
@@ -426,8 +391,8 @@
       </div>
       <div class="settings-section">
         <div class="settings-title">Account</div>
-        <div class="setting-row"><div class="setting-info"><div class="setting-name">Change Password</div><div class="setting-desc">Update your account password</div></div><button class="btn btn-ghost" style="padding:8px 14px;font-size:12px">Change</button></div>
-        <div class="setting-row"><div class="setting-info"><div class="setting-name" style="color:var(--danger)">Delete Account</div><div class="setting-desc">Permanently remove your account</div></div><button class="btn btn-danger" style="padding:8px 14px;font-size:12px">Delete</button></div>
+        <div class="setting-row"><div class="setting-info"><div class="setting-name">Change Password</div><div class="setting-desc">Update your account password</div></div><button class="btn btn-ghost" style="padding:8px 14px;font-size:12px" onclick="openModal('changePasswordModal')">Change</button></div>
+        <div class="setting-row"><div class="setting-info"><div class="setting-name" style="color:var(--danger)">Delete Account</div><div class="setting-desc">Permanently remove your account and all data</div></div><button class="btn btn-danger" style="padding:8px 14px;font-size:12px" onclick="deleteAccount()">Delete</button></div>
       </div>
     </div>
   </div>
@@ -438,17 +403,61 @@
 <div class="modal-overlay" id="addPatientModal">
   <div class="modal">
     <h3>Add New Patient</h3>
-    <div class="form-group"><label class="form-label">Patient Name</label><input type="text" class="form-input" id="patientNameInput" placeholder="Full name"></div>
-    <div class="form-group"><label class="form-label">Age</label><input type="number" class="form-input" id="patientAgeInput" placeholder="Age"></div>
+    <div class="form-group"><label class="form-label">Patient Name</label><input type="text" class="form-input" id="patientNameInput" placeholder="Full name" required></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+      <div class="form-group"><label class="form-label">Age</label><input type="number" class="form-input" id="patientAgeInput" placeholder="Age" required></div>
+      <div class="form-group"><label class="form-label">Phone Number</label><input type="tel" class="form-input" id="patientPhoneInput" placeholder="+91 9876543210" required></div>
+      <div class="form-group"><label class="form-label">Safe Zone (m)</label><input type="number" class="form-input" id="patientRadiusInput" value="100"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Patient Email (tracking link will be sent here)</label><input type="email" class="form-input" id="patientEmailInput" placeholder="patient@email.com" required></div>
     <div class="form-group"><label class="form-label">Condition</label><input type="text" class="form-input" id="patientConditionInput" placeholder="e.g. Alzheimer's Stage 2"></div>
-    <div class="form-group"><label class="form-label">Safe Zone Radius (meters)</label><input type="number" class="form-input" value="100" placeholder="100"></div>
+    </div>
+    <div style="background:rgba(0,212,170,0.06);border:1px solid rgba(0,212,170,0.2);border-radius:10px;padding:12px;margin-bottom:16px;">
+      <div style="font-size:12px;color:var(--accent);font-weight:600;margin-bottom:4px;">📍 How location tracking works</div>
+      <div style="font-size:12px;color:var(--muted);line-height:1.6;">A tracking link will be emailed to the patient. When they open it on their phone and tap "Start Sharing", their real-time GPS location will appear on your dashboard map.</div>
+    </div>
     <div class="modal-actions">
-      <button class="btn btn-primary" onclick="addPatient()">Add Patient</button>
+      <button class="btn btn-primary" onclick="addPatient()">Add Patient & Send Tracking Link</button>
       <button class="btn btn-ghost" onclick="closeModal('addPatientModal')">Cancel</button>
     </div>
   </div>
 </div>
 
 <script src="js/app.js"></script>
+
+<!-- Add Routine Modal -->
+<div class="modal-overlay" id="addRoutineModal">
+  <div class="modal">
+    <h3>Add Routine Item</h3>
+    <div style="display:grid;grid-template-columns:1fr 2fr;gap:12px;">
+      <div class="form-group"><label class="form-label">Time</label><input type="time" class="form-input" id="routineTimeInput"></div>
+      <div class="form-group"><label class="form-label">Activity</label><input type="text" class="form-input" id="routineActivityInput" placeholder="e.g. Morning medication"></div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Patient</label>
+      <select class="form-input" id="routinePatientSelect"><option value="all">All Patients</option></select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="addRoutine()">Add Routine</button>
+      <button class="btn btn-ghost" onclick="closeModal('addRoutineModal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Change Password Modal -->
+<div class="modal-overlay" id="changePasswordModal">
+  <div class="modal">
+    <h3>Change Password</h3>
+    <div class="form-group"><label class="form-label">Current Password</label><input type="password" class="form-input" id="currentPasswordInput" placeholder="Enter current password"></div>
+    <div class="form-group"><label class="form-label">New Password</label><input type="password" class="form-input" id="newPasswordInput" placeholder="Enter new password (min 6 chars)"></div>
+    <div class="form-group"><label class="form-label">Confirm New Password</label><input type="password" class="form-input" id="confirmNewPasswordInput" placeholder="Repeat new password"></div>
+    <div id="passwordChangeMsg" style="font-size:13px;margin-top:8px;"></div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="changePassword()">Update Password</button>
+      <button class="btn btn-ghost" onclick="closeModal('changePasswordModal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>

@@ -44,11 +44,11 @@ router.get('/:id', authMiddleware, async (req, res) => {
 // POST /api/patients
 router.post('/', authMiddleware, async (req, res) => {
   try {
-    const { name, age, condition, safeZoneRadius, safeZoneCenter, notes } = req.body;
+    const { name, age, condition, safeZoneRadius, safeZoneCenter, notes, phone } = req.body;
     if (!name || !age) return res.status(400).json({ error: 'Name and age required' });
 
     if (Patient) {
-      const patient = await Patient.create({ name, age, condition, safeZoneRadius, safeZoneCenter, notes, caregiverId: req.user.id });
+      const patient = await Patient.create({ name, age, condition, safeZoneRadius, safeZoneCenter, notes, phone, caregiverId: req.user.id });
       req.io.emit('patient-added', patient);
       return res.status(201).json(patient);
     }
@@ -70,6 +70,19 @@ router.put('/:id', authMiddleware, async (req, res) => {
       return res.json(patient);
     }
     res.json({ ...demoPatients[0], ...req.body });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// DELETE /api/patients/:id
+router.delete('/:id', authMiddleware, async (req, res) => {
+  try {
+    if (Patient) {
+      await Patient.findByIdAndDelete(req.params.id);
+      return res.json({ message: 'Patient deleted' });
+    }
+    res.json({ message: 'Deleted' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
